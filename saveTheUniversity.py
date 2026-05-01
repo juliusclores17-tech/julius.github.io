@@ -3,57 +3,67 @@ import sys
 import random
 
 pygame.init()
+pygame.mixer.init()
 
+width = 600
+height = 800
 
-WIDTH, HEIGHT = 600, 800
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Save The University")
+screen = pygame.display.set_mode((width, height))
+pygame.display.set_caption("Save the University")
 
-
-BLACK = (0, 0, 0)
-BLUE = (0, 120, 255)
-
-
-font = pygame.font.SysFont(None, 36)
-big_font = pygame.font.SysFont(None, 60)
+font = pygame.font.SysFont("Arial", 30)
+bigFont = pygame.font.SysFont("Arial", 60)
 
 clock = pygame.time.Clock()
 
+background = pygame.image.load("pictures/background.jpg")
+background = pygame.transform.scale(background, (width, height))
 
-background = pygame.image.load("background.jpg")
-background = pygame.transform.scale(background, (WIDTH, HEIGHT))
+objectImg = pygame.transform.scale(pygame.image.load("log-removebg-preview.png"), (50, 50))
 
+playerImg = pygame.transform.scale(pygame.image.load("image/Chibi_char_pixel2.png"), (120, 100))
 
-object_img = pygame.transform.scale(pygame.image.load("log-removebg-preview.png"), (50, 50))
-player_img = pygame.transform.scale(pygame.image.load("Chibi_char_pixel2.png"), (120, 100))
+pygame.mixer.music.load("sounds/bgMusic.mp3")
+pygame.mixer.music.set_volume(0.2)
 
+catchSound = pygame.mixer.Sound("sounds/catchSound.mp3")
+catchSound.set_volume(0.5)
+loseSound = pygame.mixer.Sound("sounds/gameOver.mp3")
+loseSound.set_volume(0.5)
+winSound = pygame.mixer.Sound("sounds/win.mp3")
+winSound.set_volume(0.5)
 
-player_speed = 10
-WIN_SCORE = 50
-
+playerSpeed = 15
+winScore = 50
 
 dares = [
-    "Sing a song ",
-    "Do 20 push-ups ",
-    "Try to lick your elbow."
+    "Sing a song",
+    "Do 20 push-ups",
+    "Try to lick your elbow",
+    "Kiss your classmate"
 ]
 
-current_dare = random.choice(dares)
+currentDare = random.choice(dares)
 
-def reset_game():
-    global current_dare
-    current_dare = random.choice(dares)
+def resetGame():
+    global currentDare
+    currentDare = random.choice(dares)
     return (
         pygame.Rect(250, 700, 120, 60),
-        pygame.Rect(random.randint(0, WIDTH-50), 0, 50, 50),
+        pygame.Rect(random.randint(0, width-50), 0, 50, 50),
         0,
         5
     )
 
-player, obj, score, speed = reset_game()
-game_over = False
-won = False
+player, logo, score, speed = resetGame()
 
+gameOver = False
+won = False
+started = False
+
+playedLoseSound = False
+playedWinSound = False
+#Marquez, Porbile, Dela cruz
 while True:
     screen.blit(background, (0, 0))
 
@@ -62,51 +72,89 @@ while True:
             pygame.quit()
             sys.exit()
 
-        if (game_over or won) and event.type == pygame.KEYDOWN:
+        if not started and event.type == pygame.KEYDOWN:
+            started = True
+            player, logo, score, speed = resetGame()
+            pygame.mixer.music.play(-1, 0.0, 3000)
+
+        elif (gameOver or won) and event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                player, obj, score, speed = reset_game()
-                game_over = False
+                player, logo, score, speed = resetGame()
+                gameOver = False
                 won = False
+                playedLoseSound = False
+                playedWinSound = False
+                pygame.mixer.music.play(-1, 0.0, 3000)
 
-    if not game_over and not won:
+
+    if not started:
+        startKey = ""
+
+        startImg = pygame.transform.scale(pygame.image.load("images/=====.png"), (400, 200))
+        screen.blit(startImg, (100, 50))
+
+        startButton = pygame.transform.scale(pygame.image.load("images/startButton.png"), (250, 200))
+        screen.blit(startButton, (180, 550))
+
+
+    elif not gameOver and not won:
+        spikes = pygame.transform.scale(pygame.image.load("images/spikes.png"), (700, 500))
+        screen.blit(spikes, (0, 545))
+        
         keys = pygame.key.get_pressed()
+
         if keys[pygame.K_LEFT]:
-            player.x -= player_speed
+            player.x -= playerSpeed
         if keys[pygame.K_RIGHT]:
-            player.x += player_speed
+            player.x += playerSpeed
 
-        player.x = max(0, min(WIDTH - player.width, player.x))
+        player.x = max(0, min(width - player.width, player.x))
 
-        obj.y += speed
-
-        if obj.colliderect(player):
+        logo.y += speed
+#Clores, Danan
+        if logo.colliderect(player):
+            catchSound.play()
             score += 1
-            obj.topleft = (random.randint(0, WIDTH-50), 0)
+            logo.topleft = (random.randint(0, width-50), 0)
             speed += 0.3
 
-        if obj.top > HEIGHT:
-            game_over = True
 
-        if score == WIN_SCORE:
+        if logo.top > height:
+            gameOver = True
+
+        if score == winScore:
             won = True
 
-        screen.blit(player_img, player)
-        screen.blit(object_img, obj)
-        screen.blit(font.render(f"Score: {score}/50", True, BLACK), (10, 10))
+        screen.blit(playerImg, player)
+        screen.blit(objectImg, logo)
+        screen.blit(font.render(f"Score: {score}/50", True, "black"), (10, 10))
 
-    elif game_over:
-        screen.blit(big_font.render("GAME OVER", True, BLACK), (150, 250))
-        screen.blit(font.render("Your Dare:", True, BLACK), (230, 320))
+    elif gameOver:
+        if not playedLoseSound:
+            pygame.mixer.music.stop()
+            loseSound.play()
+            playedLoseSound = True
 
-       
-        screen.blit(font.render(current_dare, True, BLACK), (160, 360))
 
-        screen.blit(font.render("Press SPACE to Restart", True, BLACK), (150, 420))
+        box = pygame.transform.scale(pygame.image.load("pictures/box.png"), (550, 800))
+        screen.blit(box, (40, 80))
 
+        screen.blit(bigFont.render("GAME OVER", True, "red"), (160, 200))
+        screen.blit(font.render("Your Dare:", True, "black"), (130, 270))
+        screen.blit(font.render(currentDare, True, "black"), (150, 320))
+        screen.blit(font.render("Press SPACE to Restart", True, "black"), (190, 550))
+        
     elif won:
-        screen.blit(big_font.render("YOU WIN!", True, BLUE), (180, 250))
-        screen.blit(font.render("You caught all 50!", True, BLACK), (180, 320))
-        screen.blit(font.render("Press SPACE to Play Again", True, BLACK), (130, 400))
+        if not playedWinSound:
+            pygame.mixer.music.stop()
+            winSound.play()
+            playedWinSound = True
+
+        screen.blit(bigFont.render("YOU WIN!", True, "blue"), (180, 250))
+        screen.blit(font.render("You caught all 50!", True, "black"), (180, 320))
+        screen.blit(font.render("Press SPACE to Play Again", True, "black"), (130, 400))
+        screen.blit(box, (100, 100))
 
     pygame.display.flip()
     clock.tick(60)
+#De guzman, Lomboy
