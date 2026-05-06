@@ -63,7 +63,7 @@ started = False
 
 playedLoseSound = False
 playedWinSound = False
-
+#angelo, johnbern, porbile
 while True:
     screen.blit(background, (0, 0))
 
@@ -115,7 +115,7 @@ while True:
             score += 1
             logo.topleft = (random.randint(0, width-50), 0)
             speed += 0.3
-
+#Clores, Danan
         if logo.top > height: 
             gameOver = True
 
@@ -159,3 +159,4 @@ while True:
 
     pygame.display.flip()
     clock.tick(60)
+#MJ, Marivic
